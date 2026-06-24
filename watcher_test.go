@@ -147,6 +147,23 @@ func TestHandleXRRecordsOnce(t *testing.T) {
 	}
 }
 
+func TestHandleXRGaugeSetOnce(t *testing.T) {
+	w := newWatcher(nil)
+	k := xrKind{kind: "XSql"}
+
+	first := makeXR("my-db", "my-app", "2026-06-23T02:00:00Z", "2026-06-23T02:00:30Z")
+	w.handleXR(first, k)
+
+	// Simulate Crossplane drifting lastTransitionTime forward by weeks on reconcile.
+	drifted := makeXR("my-db", "my-app", "2026-06-23T02:00:00Z", "2026-07-23T02:00:30Z")
+	w.handleXR(drifted, k)
+
+	key := "XSql/my-app/my-db"
+	if !w.xrReadyRecorded[key] {
+		t.Error("expected key to remain recorded after reconcile with drifted timestamp")
+	}
+}
+
 func TestHandleXRClearsOnNotReady(t *testing.T) {
 	w := newWatcher(nil)
 	k := xrKind{kind: "XSql"}

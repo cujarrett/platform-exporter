@@ -152,10 +152,10 @@ func (w *watcher) handleXR(obj *unstructured.Unstructured, k xrKind) {
 	defer w.mu.Unlock()
 
 	if ready && !readyAt.IsZero() {
-		elapsed := readyAt.Sub(created).Seconds()
-		xrReadyDuration.WithLabelValues(k.kind, name, ns, backend).Set(elapsed)
 		if !w.xrReadyRecorded[key] {
+			elapsed := readyAt.Sub(created).Seconds()
 			w.xrReadyRecorded[key] = true
+			xrReadyDuration.WithLabelValues(k.kind, name, ns, backend).Set(elapsed)
 			xrTimeToReady.WithLabelValues(k.kind, backend).Observe(elapsed)
 			slog.Info("xr ready", "kind", k.kind, "name", name, "namespace", ns, "backend", backend, "seconds", elapsed)
 		}
@@ -278,10 +278,10 @@ func (w *watcher) handleManaged(obj *unstructured.Unstructured, k managedKind) {
 	defer w.mu.Unlock()
 
 	if ready && !readyAt.IsZero() {
-		elapsed := readyAt.Sub(created).Seconds()
-		managedReadyDuration.WithLabelValues(k.kind, name, ns).Set(elapsed)
 		if !w.managedReadyRecorded[key] {
+			elapsed := readyAt.Sub(created).Seconds()
 			w.managedReadyRecorded[key] = true
+			managedReadyDuration.WithLabelValues(k.kind, name, ns).Set(elapsed)
 			managedTimeToReady.WithLabelValues(k.kind).Observe(elapsed)
 			slog.Info("managed ready", "kind", k.kind, "name", name, "seconds", elapsed)
 		}
