@@ -1,0 +1,40 @@
+# platform-exporter
+
+Go Prometheus exporter that watches Crossplane platform XRs, managed resources, and pods, and emits readiness, timing, and binding metrics. Single binary, no frameworks.
+
+## Commands
+| Command | What it does |
+|---|---|
+| `just ci` | Lint + test + build (run before pushing) |
+| `just run` | Start locally (requires KUBECONFIG) |
+| `just test` | Run tests with race detector |
+| `just lint` | go mod tidy -diff + golangci-lint |
+
+## Architecture
+- `main.go` — entrypoint, k8s client setup, metrics HTTP server on :8080
+- `watcher.go` — dynamic watch loop per XR and managed resource kind; binding extraction and sync; condition parsing
+- `pod_watcher.go` — pod watch loop for init container durations and pod ready time
+- `metrics.go` — Prometheus histogram/gauge definitions
+
+## Watched resources
+
+**XRs** (`platform.local.lab/v1alpha1`): XApi, XSpa, XSql, XNoSql, XObjectStorage, XCache, XTopic, XSubscription
+
+**Managed resources**: IAMRole (`iam.aws.upbound.io`), RolesAnywhereProfile (`rolesanywhere.aws.upbound.io`)
+
+**Pods**: labelled `app in (xapi, xspa)` — init container durations and pod ready time
+
+## Metrics
+- `platform_xr_time_to_ready_seconds{kind, backend}` — histogram, creation → Ready=True
+- `platform_xr_ready{kind, name, namespace, backend}` — gauge, 1=ready 0=not
+- `platform_xr_binding{consumer_kind, consumer_name, binding_type, provider_name}` — gauge, 1=active binding; tracks sqlRef, nosqlRef, topicRef, subscriptionRef, objectStorageRefs on XApi; cleared on XApi deletion
+- `platform_managed_time_to_ready_seconds{kind}` — histogram, creation → Ready=True
+- `platform_managed_ready{kind, name, namespace}` — gauge, 1=ready 0=not
+- `platform_pod_init_container_seconds{init_container, namespace}` — histogram, pod creation → init container finished
+- `platform_pod_time_to_ready_seconds{namespace}` — histogram, pod creation → Ready=True
+
+## Conventions
+- No frameworks — stdlib + client-go + prometheus/client_golang
+- `slog` structured logging (JSON)
+- Graceful shutdown via signal.NotifyContext
+- KUBECONFIG env for local dev, in-cluster config in production
