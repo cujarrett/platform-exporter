@@ -53,7 +53,8 @@ var watchedManaged = []managedKind{
 }
 
 type watcher struct {
-	client dynamic.Interface
+	client    dynamic.Interface
+	startedAt time.Time
 
 	mu                    sync.Mutex
 	xrReadyRecorded       map[string]bool                // kind/namespace/name
@@ -66,6 +67,7 @@ type watcher struct {
 func newWatcher(client dynamic.Interface) *watcher {
 	return &watcher{
 		client:                client,
+		startedAt:             time.Now(),
 		xrReadyRecorded:       make(map[string]bool),
 		managedReadyRecorded:  make(map[string]bool),
 		initContainerRecorded: make(map[string]bool),
@@ -156,8 +158,14 @@ func (w *watcher) handleXR(obj *unstructured.Unstructured, k xrKind) {
 			elapsed := readyAt.Sub(created).Seconds()
 			w.xrReadyRecorded[key] = true
 			xrReadyDuration.WithLabelValues(k.kind, name, ns, backend).Set(elapsed)
-			xrTimeToReady.WithLabelValues(k.kind, backend).Observe(elapsed)
-			slog.Info("xr ready", "kind", k.kind, "name", name, "namespace", ns, "backend", backend, "seconds", elapsed)
+			// Only observe in the histogram for XRs created after this process started.
+			// Pre-existing XRs seen on the first reconcile event after a restart have
+			// unreliable lastTransitionTime values (Crossplane drifts them on re-reconciles),
+			// so their elapsed would be current age rather than actual provisioning time.
+			if created.After(w.startedAt) {
+				xrTimeToReady.WithLabelValues(k.kind, backend).Observe(elapsed)
+				slog.Info("xr ready", "kind", k.kind, "name", name, "namespace", ns, "backend", backend, "seconds", elapsed)
+			}
 		}
 	}
 	if !ready {
@@ -282,8 +290,10 @@ func (w *watcher) handleManaged(obj *unstructured.Unstructured, k managedKind) {
 			elapsed := readyAt.Sub(created).Seconds()
 			w.managedReadyRecorded[key] = true
 			managedReadyDuration.WithLabelValues(k.kind, name, ns).Set(elapsed)
-			managedTimeToReady.WithLabelValues(k.kind).Observe(elapsed)
-			slog.Info("managed ready", "kind", k.kind, "name", name, "seconds", elapsed)
+			if created.After(w.startedAt) {
+				managedTimeToReady.WithLabelValues(k.kind).Observe(elapsed)
+				slog.Info("managed ready", "kind", k.kind, "name", name, "seconds", elapsed)
+			}
 		}
 	}
 	if !ready {

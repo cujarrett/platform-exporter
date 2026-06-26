@@ -164,6 +164,22 @@ func TestHandleXRGaugeSetOnce(t *testing.T) {
 	}
 }
 
+func TestHandleXRPreexistingRecordedButSkipsHistogram(t *testing.T) {
+	w := newWatcher(nil)
+	// Back-date startedAt so the test XR (created 2026-06-23) looks pre-existing.
+	// The gauge should still be set; the histogram observation is skipped.
+	w.startedAt = time.Now().Add(24 * time.Hour)
+
+	k := xrKind{kind: "XSql"}
+	obj := makeXR("old-db", "ns", "2026-06-23T02:00:00Z", "2026-06-23T02:00:30Z")
+	w.handleXR(obj, k)
+
+	key := "XSql/ns/old-db"
+	if !w.xrReadyRecorded[key] {
+		t.Error("pre-existing XR must be marked recorded to prevent re-observation on next reconcile")
+	}
+}
+
 func TestHandleXRClearsOnNotReady(t *testing.T) {
 	w := newWatcher(nil)
 	k := xrKind{kind: "XSql"}

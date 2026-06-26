@@ -90,9 +90,11 @@ func (w *watcher) recordInitContainers(obj *unstructured.Unstructured, podName, 
 			// complete once and cannot restart, so there is no valid second observation.
 			w.initContainerRecorded[key] = true
 			elapsed := t.Sub(podCreated).Seconds()
-			initContainerSeconds.WithLabelValues(containerName, ns).Observe(elapsed)
 			podInitContainerDuration.WithLabelValues(containerName, ns, podName).Set(elapsed)
-			slog.Info("init container done", "container", containerName, "namespace", ns, "pod", podName, "seconds", elapsed)
+			if podCreated.After(w.startedAt) {
+				initContainerSeconds.WithLabelValues(containerName, ns).Observe(elapsed)
+				slog.Info("init container done", "container", containerName, "namespace", ns, "pod", podName, "seconds", elapsed)
+			}
 		}
 		w.mu.Unlock()
 	}
@@ -120,9 +122,11 @@ func (w *watcher) recordPodReady(obj *unstructured.Unstructured, podName, ns str
 		if !w.podReadyRecorded[key] {
 			w.podReadyRecorded[key] = true
 			elapsed := readyAt.Sub(podCreated).Seconds()
-			podTimeToReady.WithLabelValues(ns).Observe(elapsed)
 			podReadyDuration.WithLabelValues(ns, podName).Set(elapsed)
-			slog.Info("pod ready", "pod", podName, "namespace", ns, "seconds", elapsed)
+			if podCreated.After(w.startedAt) {
+				podTimeToReady.WithLabelValues(ns).Observe(elapsed)
+				slog.Info("pod ready", "pod", podName, "namespace", ns, "seconds", elapsed)
+			}
 		}
 		w.mu.Unlock()
 		return
