@@ -156,14 +156,15 @@ func (w *watcher) handleXR(obj *unstructured.Unstructured, k xrKind) {
 
 	if ready && !readyAt.IsZero() {
 		if !w.xrReadyRecorded[key] {
-			elapsed := readyAt.Sub(created).Seconds()
 			w.xrReadyRecorded[key] = true
-			xrReadyDuration.WithLabelValues(k.kind, name, ns, backend).Set(elapsed)
-			// Only observe in the histogram for XRs created after this process started.
 			// Pre-existing XRs seen on the first reconcile event after a restart have
 			// unreliable lastTransitionTime values (Crossplane drifts them on re-reconciles),
 			// so their elapsed would be current age rather than actual provisioning time.
+			// Skip both the gauge and histogram for those; only record XRs provisioned
+			// while this process has been running.
 			if created.After(w.startedAt) {
+				elapsed := readyAt.Sub(created).Seconds()
+				xrReadyDuration.WithLabelValues(k.kind, name, ns, backend).Set(elapsed)
 				xrTimeToReady.WithLabelValues(k.kind, backend).Observe(elapsed)
 				slog.Info("xr ready", "kind", k.kind, "name", name, "namespace", ns, "backend", backend, "seconds", elapsed)
 			}
@@ -288,10 +289,10 @@ func (w *watcher) handleManaged(obj *unstructured.Unstructured, k managedKind) {
 
 	if ready && !readyAt.IsZero() {
 		if !w.managedReadyRecorded[key] {
-			elapsed := readyAt.Sub(created).Seconds()
 			w.managedReadyRecorded[key] = true
-			managedReadyDuration.WithLabelValues(k.kind, name, ns).Set(elapsed)
 			if created.After(w.startedAt) {
+				elapsed := readyAt.Sub(created).Seconds()
+				managedReadyDuration.WithLabelValues(k.kind, name, ns).Set(elapsed)
 				managedTimeToReady.WithLabelValues(k.kind).Observe(elapsed)
 				slog.Info("managed ready", "kind", k.kind, "name", name, "seconds", elapsed)
 			}

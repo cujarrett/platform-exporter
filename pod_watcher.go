@@ -121,9 +121,9 @@ func (w *watcher) recordPodReady(obj *unstructured.Unstructured, podName, ns str
 		w.mu.Lock()
 		if !w.podReadyRecorded[key] {
 			w.podReadyRecorded[key] = true
-			elapsed := readyAt.Sub(podCreated).Seconds()
-			podReadyDuration.WithLabelValues(ns, podName).Set(elapsed)
 			if podCreated.After(w.startedAt) {
+				elapsed := readyAt.Sub(podCreated).Seconds()
+				podReadyDuration.WithLabelValues(ns, podName).Set(elapsed)
 				podTimeToReady.WithLabelValues(ns).Observe(elapsed)
 				slog.Info("pod ready", "pod", podName, "namespace", ns, "seconds", elapsed)
 			}
