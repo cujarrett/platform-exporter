@@ -116,6 +116,7 @@ func (w *watcher) doWatchXR(ctx context.Context, gvr schema.GroupVersionResource
 					ns := obj.GetNamespace()
 					backend := backendOf(obj, k.kind)
 					w.clearBindings(name, k.kind)
+					xrReady.DeleteLabelValues(k.kind, name, ns, backend)
 					xrReadyDuration.DeleteLabelValues(k.kind, name, ns, backend)
 				}
 				continue
