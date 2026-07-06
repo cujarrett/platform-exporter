@@ -52,6 +52,18 @@ var watchedManaged = []managedKind{
 	{"s3.aws.upbound.io", "v1beta2", "buckets", "S3Bucket"},
 }
 
+// xrIdentity is the label set behind a live XR's gauges, kept around so a
+// deletion (explicit or discovered via reconcile) can clear them without the
+// unstructured object in hand.
+type xrIdentity struct {
+	kind, name, ns, backend string
+}
+
+// managedIdentity is the managed-resource equivalent of xrIdentity.
+type managedIdentity struct {
+	kind, name, ns string
+}
+
 type watcher struct {
 	client    dynamic.Interface
 	startedAt time.Time
@@ -62,6 +74,8 @@ type watcher struct {
 	initContainerRecorded map[string]bool                // namespace/pod/container
 	podReadyRecorded      map[string]bool                // namespace/pod
 	xrBindings            map[string]map[string]struct{} // consumer name → active "type/provider" keys
+	xrLive                map[string]xrIdentity          // kind/namespace/name → labels, for reconcile-on-reconnect
+	managedLive           map[string]managedIdentity     // kind/name → labels, for reconcile-on-reconnect
 }
 
 func newWatcher(client dynamic.Interface) *watcher {
@@ -73,6 +87,8 @@ func newWatcher(client dynamic.Interface) *watcher {
 		initContainerRecorded: make(map[string]bool),
 		podReadyRecorded:      make(map[string]bool),
 		xrBindings:            make(map[string]map[string]struct{}),
+		xrLive:                make(map[string]xrIdentity),
+		managedLive:           make(map[string]managedIdentity),
 	}
 }
 
@@ -95,8 +111,19 @@ func (w *watcher) watchXR(ctx context.Context, k xrKind) {
 }
 
 func (w *watcher) doWatchXR(ctx context.Context, gvr schema.GroupVersionResource, k xrKind) error {
+	// List first and reconcile against what we last knew was live: the watch is
+	// re-opened every few minutes (see retryWatch), and a delete that lands in
+	// the gap between the old watch closing and this list running would
+	// otherwise never fire a watch.Deleted event, leaking its gauges forever.
+	list, err := w.client.Resource(gvr).Namespace("").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	w.reconcileXR(list.Items, k)
+
 	// Namespace("") is required for cluster-scoped resources; for namespaced resources it means all namespaces.
-	wi, err := w.client.Resource(gvr).Namespace("").Watch(ctx, metav1.ListOptions{})
+	// Watching from the list's resourceVersion avoids missing events created between the list and the watch starting.
+	wi, err := w.client.Resource(gvr).Namespace("").Watch(ctx, metav1.ListOptions{ResourceVersion: list.GetResourceVersion()})
 	if err != nil {
 		return err
 	}
@@ -112,12 +139,7 @@ func (w *watcher) doWatchXR(ctx context.Context, gvr schema.GroupVersionResource
 			}
 			if ev.Type == watch.Deleted {
 				if obj, ok := ev.Object.(*unstructured.Unstructured); ok {
-					name := obj.GetName()
-					ns := obj.GetNamespace()
-					backend := backendOf(obj, k.kind)
-					w.clearBindings(name, k.kind)
-					xrReady.DeleteLabelValues(k.kind, name, ns, backend)
-					xrReadyDuration.DeleteLabelValues(k.kind, name, ns, backend)
+					w.deleteXR(k.kind + "/" + obj.GetNamespace() + "/" + obj.GetName())
 				}
 				continue
 			}
@@ -131,6 +153,52 @@ func (w *watcher) doWatchXR(ctx context.Context, gvr schema.GroupVersionResource
 			w.handleXR(obj, k)
 		}
 	}
+}
+
+// reconcileXR refreshes gauges for every currently-live XR of kind k and
+// deletes gauges for any XR this watcher previously tracked (of the same
+// kind) that is no longer in the list — the case a missed watch.Deleted
+// event would otherwise leak.
+func (w *watcher) reconcileXR(items []unstructured.Unstructured, k xrKind) {
+	seen := make(map[string]struct{}, len(items))
+	for i := range items {
+		obj := &items[i]
+		seen[k.kind+"/"+obj.GetNamespace()+"/"+obj.GetName()] = struct{}{}
+		w.handleXR(obj, k)
+	}
+
+	w.mu.Lock()
+	var stale []string
+	for key, id := range w.xrLive {
+		if id.kind != k.kind {
+			continue
+		}
+		if _, ok := seen[key]; !ok {
+			stale = append(stale, key)
+		}
+	}
+	w.mu.Unlock()
+
+	for _, key := range stale {
+		w.deleteXR(key)
+	}
+}
+
+// deleteXR clears every gauge tracked for a given XR key ("kind/namespace/name").
+func (w *watcher) deleteXR(key string) {
+	w.mu.Lock()
+	id, ok := w.xrLive[key]
+	if ok {
+		delete(w.xrLive, key)
+		delete(w.xrReadyRecorded, key)
+	}
+	w.mu.Unlock()
+	if !ok {
+		return
+	}
+	w.clearBindings(id.name, id.kind)
+	xrReady.DeleteLabelValues(id.kind, id.name, id.ns, id.backend)
+	xrReadyDuration.DeleteLabelValues(id.kind, id.name, id.ns, id.backend)
 }
 
 func (w *watcher) handleXR(obj *unstructured.Unstructured, k xrKind) {
@@ -153,6 +221,8 @@ func (w *watcher) handleXR(obj *unstructured.Unstructured, k xrKind) {
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
+	w.xrLive[key] = xrIdentity{kind: k.kind, name: name, ns: ns, backend: backend}
 
 	if ready && !readyAt.IsZero() {
 		if !w.xrReadyRecorded[key] {
@@ -245,7 +315,13 @@ func (w *watcher) watchManaged(ctx context.Context, k managedKind) {
 }
 
 func (w *watcher) doWatchManaged(ctx context.Context, gvr schema.GroupVersionResource, k managedKind) error {
-	wi, err := w.client.Resource(gvr).Namespace("").Watch(ctx, metav1.ListOptions{})
+	list, err := w.client.Resource(gvr).Namespace("").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	w.reconcileManaged(list.Items, k)
+
+	wi, err := w.client.Resource(gvr).Namespace("").Watch(ctx, metav1.ListOptions{ResourceVersion: list.GetResourceVersion()})
 	if err != nil {
 		return err
 	}
@@ -259,6 +335,12 @@ func (w *watcher) doWatchManaged(ctx context.Context, gvr schema.GroupVersionRes
 			if !ok {
 				return nil
 			}
+			if ev.Type == watch.Deleted {
+				if obj, ok := ev.Object.(*unstructured.Unstructured); ok {
+					w.deleteManaged(k.kind + "/" + obj.GetName())
+				}
+				continue
+			}
 			if ev.Type != watch.Added && ev.Type != watch.Modified {
 				continue
 			}
@@ -269,6 +351,50 @@ func (w *watcher) doWatchManaged(ctx context.Context, gvr schema.GroupVersionRes
 			w.handleManaged(obj, k)
 		}
 	}
+}
+
+// reconcileManaged mirrors reconcileXR for managed resources: refresh gauges
+// for everything currently listed, and clear gauges for anything this
+// watcher previously tracked (of the same kind) that has since disappeared.
+func (w *watcher) reconcileManaged(items []unstructured.Unstructured, k managedKind) {
+	seen := make(map[string]struct{}, len(items))
+	for i := range items {
+		obj := &items[i]
+		seen[k.kind+"/"+obj.GetName()] = struct{}{}
+		w.handleManaged(obj, k)
+	}
+
+	w.mu.Lock()
+	var stale []string
+	for key, id := range w.managedLive {
+		if id.kind != k.kind {
+			continue
+		}
+		if _, ok := seen[key]; !ok {
+			stale = append(stale, key)
+		}
+	}
+	w.mu.Unlock()
+
+	for _, key := range stale {
+		w.deleteManaged(key)
+	}
+}
+
+// deleteManaged clears every gauge tracked for a given managed-resource key ("kind/name").
+func (w *watcher) deleteManaged(key string) {
+	w.mu.Lock()
+	id, ok := w.managedLive[key]
+	if ok {
+		delete(w.managedLive, key)
+		delete(w.managedReadyRecorded, key)
+	}
+	w.mu.Unlock()
+	if !ok {
+		return
+	}
+	managedReady.DeleteLabelValues(id.kind, id.name, id.ns)
+	managedReadyDuration.DeleteLabelValues(id.kind, id.name, id.ns)
 }
 
 func (w *watcher) handleManaged(obj *unstructured.Unstructured, k managedKind) {
@@ -286,6 +412,8 @@ func (w *watcher) handleManaged(obj *unstructured.Unstructured, k managedKind) {
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
+	w.managedLive[key] = managedIdentity{kind: k.kind, name: name, ns: ns}
 
 	if ready && !readyAt.IsZero() {
 		if !w.managedReadyRecorded[key] {
