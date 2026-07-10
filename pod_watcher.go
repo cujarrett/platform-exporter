@@ -71,6 +71,15 @@ func (w *watcher) recordInitContainers(obj *unstructured.Unstructured, podName, 
 		}
 		key := ns + "/" + podName + "/" + containerName
 
+		// Init containers re-run after a node or container runtime restart. The
+		// terminated state then describes the re-run (typically instant), so
+		// finishedAt - podCreated would report the pod's age, not the binding wait.
+		// The first-run timing is gone from the status at that point — skip.
+		restartCount, _, _ := unstructured.NestedInt64(sm, "restartCount")
+		if restartCount > 0 {
+			continue
+		}
+
 		terminated, _, _ := unstructured.NestedMap(sm, "state", "terminated")
 		if terminated == nil {
 			continue
@@ -86,8 +95,8 @@ func (w *watcher) recordInitContainers(obj *unstructured.Unstructured, podName, 
 
 		w.mu.Lock()
 		if !w.initContainerRecorded[key] {
-			// initContainerRecorded is intentionally never cleared: init containers
-			// complete once and cannot restart, so there is no valid second observation.
+			// initContainerRecorded is intentionally never cleared: only the first
+			// run is a valid observation, and re-runs are filtered out above.
 			w.initContainerRecorded[key] = true
 			elapsed := t.Sub(podCreated).Seconds()
 			podInitContainerDuration.WithLabelValues(containerName, ns, podName).Set(elapsed)

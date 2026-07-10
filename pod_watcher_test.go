@@ -48,6 +48,33 @@ func TestRecordInitContainersSkipsRunning(t *testing.T) {
 	}
 }
 
+func TestRecordInitContainersSkipsRestarted(t *testing.T) {
+	w := newWatcher(nil)
+
+	// After a node reboot the init container re-runs; the terminated state then
+	// describes the re-run, so finishedAt - podCreated would be the pod's age.
+	pod := &unstructured.Unstructured{Object: map[string]interface{}{}}
+	_ = unstructured.SetNestedSlice(pod.Object, []interface{}{
+		map[string]interface{}{
+			"name":         "wait-for-cache-binding",
+			"restartCount": int64(1),
+			"state": map[string]interface{}{
+				"terminated": map[string]interface{}{
+					"finishedAt": "2026-06-24T03:00:00Z",
+					"exitCode":   int64(0),
+				},
+			},
+		},
+	}, "status", "initContainerStatuses")
+
+	podCreated, _ := time.Parse(time.RFC3339, "2026-06-23T03:00:00Z")
+	w.recordInitContainers(pod, "xapi-foo", "my-app", podCreated)
+
+	if len(w.initContainerRecorded) != 0 {
+		t.Error("expected no entries recorded for restarted init container")
+	}
+}
+
 func TestRecordPodReadyRecordsOnce(t *testing.T) {
 	w := newWatcher(nil)
 	pod := makePod("xapi-foo-abc", "my-app", "2026-06-23T03:00:00Z", nil)
