@@ -75,7 +75,7 @@ var (
 	xrBinding = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "platform",
 		Name:      "xr_binding",
-		Help:      "1 when an XApi has an active binding to a named platform resource.",
+		Help:      "1 when an Api has an active binding to a named platform resource.",
 	}, []string{"consumer_kind", "consumer_name", "binding_type", "provider_name"})
 )
 

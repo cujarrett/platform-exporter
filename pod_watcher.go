@@ -19,7 +19,7 @@ func (w *watcher) watchPods(ctx context.Context) {
 
 func (w *watcher) doWatchPods(ctx context.Context) error {
 	podGVR := podGVR()
-	// Only XApi and XSpa pods use init containers for service-binding; other XR
+	// Only Api and Spa pods use init containers for service-binding; other XR
 	// kinds provision eagerly and don't follow the same startup pattern.
 	wi, err := w.client.Resource(podGVR).Namespace("").Watch(ctx, metav1.ListOptions{
 		LabelSelector: "app in (xapi,xspa)",

@@ -93,27 +93,27 @@ func TestBackendOf(t *testing.T) {
 		{
 			name:        "explicit backend wins",
 			specBackend: "public-cloud",
-			kind:        "XSql",
+			kind:        "Sql",
 			want:        "public-cloud",
 		},
 		{
-			name: "XNoSql defaults to public-cloud",
-			kind: "XNoSql",
+			name: "NoSql defaults to public-cloud",
+			kind: "NoSql",
 			want: "public-cloud",
 		},
 		{
-			name: "XObjectStorage defaults to public-cloud",
-			kind: "XObjectStorage",
+			name: "ObjectStorage defaults to public-cloud",
+			kind: "ObjectStorage",
 			want: "public-cloud",
 		},
 		{
-			name: "XApi defaults to private-cloud",
-			kind: "XApi",
+			name: "Api defaults to private-cloud",
+			kind: "Api",
 			want: "private-cloud",
 		},
 		{
-			name: "XSql without backend defaults to private-cloud",
-			kind: "XSql",
+			name: "Sql without backend defaults to private-cloud",
+			kind: "Sql",
 			want: "private-cloud",
 		},
 	}
@@ -134,14 +134,14 @@ func TestBackendOf(t *testing.T) {
 
 func TestHandleXRRecordsOnce(t *testing.T) {
 	w := newWatcher(nil)
-	k := xrKind{kind: "XSql"}
+	k := xrKind{kind: "Sql"}
 
 	obj := makeXR("my-db", "my-app", "2026-06-23T02:00:00Z", "2026-06-23T02:00:30Z")
 
 	w.handleXR(obj, k)
 	w.handleXR(obj, k) // second call should not double-record
 
-	key := "XSql/my-app/my-db"
+	key := "Sql/my-app/my-db"
 	if !w.xrReadyRecorded[key] {
 		t.Error("expected key to be recorded")
 	}
@@ -149,7 +149,7 @@ func TestHandleXRRecordsOnce(t *testing.T) {
 
 func TestHandleXRGaugeSetOnce(t *testing.T) {
 	w := newWatcher(nil)
-	k := xrKind{kind: "XSql"}
+	k := xrKind{kind: "Sql"}
 
 	first := makeXR("my-db", "my-app", "2026-06-23T02:00:00Z", "2026-06-23T02:00:30Z")
 	w.handleXR(first, k)
@@ -158,7 +158,7 @@ func TestHandleXRGaugeSetOnce(t *testing.T) {
 	drifted := makeXR("my-db", "my-app", "2026-06-23T02:00:00Z", "2026-07-23T02:00:30Z")
 	w.handleXR(drifted, k)
 
-	key := "XSql/my-app/my-db"
+	key := "Sql/my-app/my-db"
 	if !w.xrReadyRecorded[key] {
 		t.Error("expected key to remain recorded after reconcile with drifted timestamp")
 	}
@@ -170,11 +170,11 @@ func TestHandleXRPreexistingRecordedButSkipsHistogram(t *testing.T) {
 	// The gauge should still be set; the histogram observation is skipped.
 	w.startedAt = time.Now().Add(24 * time.Hour)
 
-	k := xrKind{kind: "XSql"}
+	k := xrKind{kind: "Sql"}
 	obj := makeXR("old-db", "ns", "2026-06-23T02:00:00Z", "2026-06-23T02:00:30Z")
 	w.handleXR(obj, k)
 
-	key := "XSql/ns/old-db"
+	key := "Sql/ns/old-db"
 	if !w.xrReadyRecorded[key] {
 		t.Error("pre-existing XR must be marked recorded to prevent re-observation on next reconcile")
 	}
@@ -182,7 +182,7 @@ func TestHandleXRPreexistingRecordedButSkipsHistogram(t *testing.T) {
 
 func TestHandleXRClearsOnNotReady(t *testing.T) {
 	w := newWatcher(nil)
-	k := xrKind{kind: "XSql"}
+	k := xrKind{kind: "Sql"}
 
 	ready := makeXR("my-db", "my-app", "2026-06-23T02:00:00Z", "2026-06-23T02:00:30Z")
 	w.handleXR(ready, k)
@@ -196,7 +196,7 @@ func TestHandleXRClearsOnNotReady(t *testing.T) {
 
 	w.handleXR(notReady, k)
 
-	key := "XSql/my-app/my-db"
+	key := "Sql/my-app/my-db"
 	if w.xrReadyRecorded[key] {
 		t.Error("expected key to be cleared after not-ready")
 	}
