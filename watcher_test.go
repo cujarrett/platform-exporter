@@ -214,9 +214,9 @@ func TestExtractBindings(t *testing.T) {
 	bindings := extractBindings(obj)
 
 	want := map[string]struct{}{
-		"sql/my-db":                 {},
-		"topic/my-topic":            {},
-		"object-storage/my-bucket":  {},
+		"sql/my-db":                   {},
+		"topic/my-topic":              {},
+		"object-storage/my-bucket":    {},
 		"object-storage/other-bucket": {},
 	}
 	if len(bindings) != len(want) {
