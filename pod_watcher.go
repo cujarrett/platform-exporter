@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-// watchPods watches pods labelled app=xapi or app=xspa and records
+// watchPods watches pods labelled app=api or app=spa and records
 // init container durations and pod ready time. No secret access required —
 // all timing data is on the pod spec/status itself.
 func (w *watcher) watchPods(ctx context.Context) {
@@ -22,7 +22,7 @@ func (w *watcher) doWatchPods(ctx context.Context) error {
 	// Only Api and Spa pods use init containers for service-binding; other XR
 	// kinds provision eagerly and don't follow the same startup pattern.
 	wi, err := w.client.Resource(podGVR).Namespace("").Watch(ctx, metav1.ListOptions{
-		LabelSelector: "app in (xapi,xspa)",
+		LabelSelector: "app in (api,spa)",
 	})
 	if err != nil {
 		return err

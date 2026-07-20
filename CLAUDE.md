@@ -30,7 +30,7 @@ Before telling the user to commit, always run `/pre-commit-review`. It checks fo
 
 **Managed resources**: IAMRole (`iam.aws.upbound.io`), RolesAnywhereProfile (`rolesanywhere.aws.upbound.io`)
 
-**Pods**: labelled `app in (xapi, xspa)` — init container durations and pod ready time
+**Pods**: labelled `app in (api, spa)` — init container durations and pod ready time
 
 ## Metrics
 - `platform_xr_time_to_ready_seconds{kind, backend}` — histogram, creation → Ready=True

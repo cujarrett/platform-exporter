@@ -37,7 +37,7 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 | `RolesAnywhereProfile` | `rolesanywhere.aws.upbound.io/v1beta1` |
 | `S3Bucket` | `s3.aws.upbound.io/v1beta2` |
 
-**Pods**: pods labelled `app in (xapi, xspa)` — init container durations and pod ready time
+**Pods**: pods labelled `app in (api, spa)` — init container durations and pod ready time
 
 ### Api binding types
 

@@ -10,17 +10,17 @@ import (
 
 func TestRecordInitContainersRecordsOnce(t *testing.T) {
 	w := newWatcher(nil)
-	pod := makePod("xapi-foo-abc", "my-app", "2026-06-23T03:00:00Z", []initContainer{
+	pod := makePod("api-foo-abc", "my-app", "2026-06-23T03:00:00Z", []initContainer{
 		{name: "wait-for-sql-binding", finishedAt: "2026-06-23T03:00:20Z"},
 		{name: "wait-for-cache-binding", finishedAt: "2026-06-23T03:00:25Z"},
 	})
 
 	podCreated, _ := time.Parse(time.RFC3339, "2026-06-23T03:00:00Z")
-	w.recordInitContainers(pod, "xapi-foo-abc", "my-app", podCreated)
-	w.recordInitContainers(pod, "xapi-foo-abc", "my-app", podCreated) // should not double-record
+	w.recordInitContainers(pod, "api-foo-abc", "my-app", podCreated)
+	w.recordInitContainers(pod, "api-foo-abc", "my-app", podCreated) // should not double-record
 
-	sqlKey := "my-app/xapi-foo-abc/wait-for-sql-binding"
-	cacheKey := "my-app/xapi-foo-abc/wait-for-cache-binding"
+	sqlKey := "my-app/api-foo-abc/wait-for-sql-binding"
+	cacheKey := "my-app/api-foo-abc/wait-for-cache-binding"
 	if !w.initContainerRecorded[sqlKey] {
 		t.Errorf("expected %q to be recorded", sqlKey)
 	}
@@ -41,7 +41,7 @@ func TestRecordInitContainersSkipsRunning(t *testing.T) {
 	}, "status", "initContainerStatuses")
 
 	podCreated := time.Now()
-	w.recordInitContainers(pod, "xapi-foo", "my-app", podCreated)
+	w.recordInitContainers(pod, "api-foo", "my-app", podCreated)
 
 	if len(w.initContainerRecorded) != 0 {
 		t.Error("expected no entries recorded for running init container")
@@ -68,7 +68,7 @@ func TestRecordInitContainersSkipsRestarted(t *testing.T) {
 	}, "status", "initContainerStatuses")
 
 	podCreated, _ := time.Parse(time.RFC3339, "2026-06-23T03:00:00Z")
-	w.recordInitContainers(pod, "xapi-foo", "my-app", podCreated)
+	w.recordInitContainers(pod, "api-foo", "my-app", podCreated)
 
 	if len(w.initContainerRecorded) != 0 {
 		t.Error("expected no entries recorded for restarted init container")
@@ -77,7 +77,7 @@ func TestRecordInitContainersSkipsRestarted(t *testing.T) {
 
 func TestRecordPodReadyRecordsOnce(t *testing.T) {
 	w := newWatcher(nil)
-	pod := makePod("xapi-foo-abc", "my-app", "2026-06-23T03:00:00Z", nil)
+	pod := makePod("api-foo-abc", "my-app", "2026-06-23T03:00:00Z", nil)
 	_ = unstructured.SetNestedSlice(pod.Object, []interface{}{
 		map[string]interface{}{
 			"type":               "Ready",
@@ -87,10 +87,10 @@ func TestRecordPodReadyRecordsOnce(t *testing.T) {
 	}, "status", "conditions")
 
 	podCreated, _ := time.Parse(time.RFC3339, "2026-06-23T03:00:00Z")
-	w.recordPodReady(pod, "xapi-foo-abc", "my-app", podCreated)
-	w.recordPodReady(pod, "xapi-foo-abc", "my-app", podCreated) // should not double-record
+	w.recordPodReady(pod, "api-foo-abc", "my-app", podCreated)
+	w.recordPodReady(pod, "api-foo-abc", "my-app", podCreated) // should not double-record
 
-	key := "my-app/xapi-foo-abc"
+	key := "my-app/api-foo-abc"
 	if !w.podReadyRecorded[key] {
 		t.Errorf("expected %q to be recorded", key)
 	}
@@ -103,7 +103,7 @@ func TestRecordPodReadySkipsNotReady(t *testing.T) {
 		map[string]interface{}{"type": "Ready", "status": "False"},
 	}, "status", "conditions")
 
-	w.recordPodReady(pod, "xapi-foo", "my-app", time.Now())
+	w.recordPodReady(pod, "api-foo", "my-app", time.Now())
 
 	if len(w.podReadyRecorded) != 0 {
 		t.Error("expected no entries recorded for not-ready pod")
