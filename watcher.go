@@ -29,14 +29,14 @@ type managedKind struct {
 }
 
 var watchedXRs = []xrKind{
-	{"platform.local.lab", "v1alpha1", "xapis", "XApi"},
-	{"platform.local.lab", "v1alpha1", "xspas", "XSpa"},
-	{"platform.local.lab", "v1alpha1", "xsqls", "XSql"},
-	{"platform.local.lab", "v1alpha1", "xnosqls", "XNoSql"},
-	{"platform.local.lab", "v1alpha1", "xobjectstorages", "XObjectStorage"},
-	{"platform.local.lab", "v1alpha1", "xcaches", "XCache"},
-	{"platform.local.lab", "v1alpha1", "xtopics", "XTopic"},
-	{"platform.local.lab", "v1alpha1", "xsubscriptions", "XSubscription"},
+	{"platform.local.lab", "v1alpha1", "apis", "Api"},
+	{"platform.local.lab", "v1alpha1", "spas", "Spa"},
+	{"platform.local.lab", "v1alpha1", "sqls", "Sql"},
+	{"platform.local.lab", "v1alpha1", "nosqls", "NoSql"},
+	{"platform.local.lab", "v1alpha1", "objectstorages", "ObjectStorage"},
+	{"platform.local.lab", "v1alpha1", "caches", "Cache"},
+	{"platform.local.lab", "v1alpha1", "topics", "Topic"},
+	{"platform.local.lab", "v1alpha1", "subscriptions", "Subscription"},
 }
 
 var watchedManaged = []managedKind{
@@ -215,7 +215,7 @@ func (w *watcher) handleXR(obj *unstructured.Unstructured, k xrKind) {
 	}
 	xrReady.WithLabelValues(k.kind, name, ns, backend).Set(gauge)
 
-	if k.kind == "XApi" {
+	if k.kind == "Api" {
 		w.syncBindings(name, k.kind, extractBindings(obj))
 	}
 
@@ -247,7 +247,7 @@ func (w *watcher) handleXR(obj *unstructured.Unstructured, k xrKind) {
 }
 
 // extractBindings returns the set of "binding_type/provider_name" keys from an
-// XApi's spec.parameters refs (sqlRef, nosqlRef, topicRef, subscriptionRef,
+// Api's spec.parameters refs (sqlRef, nosqlRef, topicRef, subscriptionRef,
 // objectStorageRefs). The returned keys are used by syncBindings and clearBindings
 // to delete stale Prometheus label sets.
 func extractBindings(obj *unstructured.Unstructured) map[string]struct{} {
@@ -296,7 +296,7 @@ func (w *watcher) syncBindings(consumerName, consumerKind string, newBindings ma
 	w.xrBindings[consumerName] = newBindings
 }
 
-// clearBindings removes all binding gauges for a deleted XApi.
+// clearBindings removes all binding gauges for a deleted Api.
 func (w *watcher) clearBindings(consumerName, consumerKind string) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -458,7 +458,7 @@ func readyCondition(obj *unstructured.Unstructured) (bool, time.Time) {
 }
 
 // backendOf returns the infrastructure backend label for an XR. It reads
-// spec.parameters.backend when set; otherwise XNoSql and XObjectStorage are
+// spec.parameters.backend when set; otherwise NoSql and ObjectStorage are
 // always provisioned on AWS (public-cloud) while all other kinds default to the
 // private cluster (private-cloud).
 func backendOf(obj *unstructured.Unstructured, kind string) string {
@@ -467,7 +467,7 @@ func backendOf(obj *unstructured.Unstructured, kind string) string {
 		return backend
 	}
 	switch kind {
-	case "XNoSql", "XObjectStorage":
+	case "NoSql", "ObjectStorage":
 		return "public-cloud"
 	}
 	return "private-cloud"

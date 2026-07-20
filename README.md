@@ -1,6 +1,6 @@
 # platform-exporter
 
-Prometheus exporter that watches Crossplane platform XRs, managed resources, and pods, and emits readiness and timing metrics — how long each kind takes to go from created to ready, which XApis are bound to which platform resources, and how long pod init containers take.
+Prometheus exporter that watches Crossplane platform XRs, managed resources, and pods, and emits readiness and timing metrics — how long each kind takes to go from created to ready, which Apis are bound to which platform resources, and how long pod init containers take.
 
 ## Metrics
 
@@ -9,7 +9,7 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 | `platform_xr_time_to_ready_seconds` | Histogram | `kind`, `backend` | Seconds from XR creation to `Ready=True`, aggregated by kind |
 | `platform_xr_time_to_ready_seconds_instance` | Gauge | `kind`, `name`, `namespace`, `backend` | Seconds from XR creation to `Ready=True`, per instance |
 | `platform_xr_ready` | Gauge | `kind`, `name`, `namespace`, `backend` | `1` if ready, `0` if not |
-| `platform_xr_binding` | Gauge | `consumer_kind`, `consumer_name`, `binding_type`, `provider_name` | `1` when an XApi has an active binding to a named platform resource |
+| `platform_xr_binding` | Gauge | `consumer_kind`, `consumer_name`, `binding_type`, `provider_name` | `1` when an Api has an active binding to a named platform resource |
 | `platform_managed_time_to_ready_seconds` | Histogram | `kind` | Seconds from managed resource creation to `Ready=True`, aggregated by kind |
 | `platform_managed_time_to_ready_seconds_instance` | Gauge | `kind`, `name`, `namespace` | Seconds from managed resource creation to `Ready=True`, per instance |
 | `platform_managed_ready` | Gauge | `kind`, `name`, `namespace` | `1` if the managed resource is ready, `0` if not |
@@ -20,7 +20,7 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 
 ### Watched resources
 
-**XRs** (all `platform.local.lab/v1alpha1`): `XApi`, `XSpa`, `XSql`, `XNoSql`, `XObjectStorage`, `XCache`, `XTopic`, `XSubscription`
+**XRs** (all `platform.local.lab/v1alpha1`): `Api`, `Spa`, `Sql`, `NoSql`, `ObjectStorage`, `Cache`, `Topic`, `Subscription`
 
 **Managed resources**:
 
@@ -39,9 +39,9 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 
 **Pods**: pods labelled `app in (xapi, xspa)` — init container durations and pod ready time
 
-### XApi binding types
+### Api binding types
 
-`platform_xr_binding` tracks refs from an XApi's spec to other platform resources:
+`platform_xr_binding` tracks refs from an Api's spec to other platform resources:
 
 | `binding_type` | Spec field |
 |---|---|
@@ -76,4 +76,4 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 
 ## Deployment
 
-Runs on the homelab cluster as a cluster-scoped service (not an XApi — needs a ClusterRole to watch XRs across all namespaces). Manifests live in [`homelab/cluster/platform-exporter/`](https://github.com/cujarrett/homelab/tree/main/cluster/platform-exporter). Image: `ghcr.io/cujarrett/platform-exporter`. ARM64.
+Runs on the homelab cluster as a cluster-scoped service (not an Api — needs a ClusterRole to watch XRs across all namespaces). Manifests live in [`homelab/cluster/platform-exporter/`](https://github.com/cujarrett/homelab/tree/main/cluster/platform-exporter). Image: `ghcr.io/cujarrett/platform-exporter`. ARM64.
