@@ -59,6 +59,7 @@ func (w *watcher) handlePod(obj *unstructured.Unstructured) {
 }
 
 func (w *watcher) recordInitContainers(obj *unstructured.Unstructured, podName, ns string, podCreated time.Time) {
+	sidecars := nativeSidecarNames(obj)
 	statuses, _, _ := unstructured.NestedSlice(obj.Object, "status", "initContainerStatuses")
 	for _, s := range statuses {
 		sm, ok := s.(map[string]interface{})
@@ -69,12 +70,20 @@ func (w *watcher) recordInitContainers(obj *unstructured.Unstructured, podName, 
 		if containerName == "" {
 			continue
 		}
+
+		// Native sidecars (restartPolicy: Always, e.g. istio-proxy) sit in
+		// initContainers but run for the pod's whole life. They only reach a
+		// terminated state at pod shutdown, so timing them reports the pod's
+		// age, not a startup step.
+		if sidecars[containerName] {
+			continue
+		}
+
 		key := ns + "/" + podName + "/" + containerName
 
 		// Init containers re-run after a node or container runtime restart. The
-		// terminated state then describes the re-run (typically instant), so
-		// finishedAt - podCreated would report the pod's age, not the binding wait.
-		// The first-run timing is gone from the status at that point — skip.
+		// terminated state then describes the re-run, not the original startup
+		// wait, and the first-run timing is gone from the status — skip.
 		restartCount, _, _ := unstructured.NestedInt64(sm, "restartCount")
 		if restartCount > 0 {
 			continue
@@ -84,11 +93,19 @@ func (w *watcher) recordInitContainers(obj *unstructured.Unstructured, podName, 
 		if terminated == nil {
 			continue
 		}
+		// Measure the container's own run, not the time since pod creation.
+		// Init containers are sequential, so a cumulative figure makes every
+		// stage after a slow one look equally slow.
+		startedAt, _ := terminated["startedAt"].(string)
 		finishedAt, _ := terminated["finishedAt"].(string)
-		if finishedAt == "" {
+		if startedAt == "" || finishedAt == "" {
 			continue
 		}
-		t, err := time.Parse(time.RFC3339, finishedAt)
+		start, err := time.Parse(time.RFC3339, startedAt)
+		if err != nil {
+			continue
+		}
+		end, err := time.Parse(time.RFC3339, finishedAt)
 		if err != nil {
 			continue
 		}
@@ -98,7 +115,7 @@ func (w *watcher) recordInitContainers(obj *unstructured.Unstructured, podName, 
 			// initContainerRecorded is intentionally never cleared: only the first
 			// run is a valid observation, and re-runs are filtered out above.
 			w.initContainerRecorded[key] = true
-			elapsed := t.Sub(podCreated).Seconds()
+			elapsed := end.Sub(start).Seconds()
 			podInitContainerDuration.WithLabelValues(containerName, ns, podName).Set(elapsed)
 			if podCreated.After(w.startedAt) {
 				initContainerSeconds.WithLabelValues(containerName, ns).Observe(elapsed)
@@ -107,6 +124,25 @@ func (w *watcher) recordInitContainers(obj *unstructured.Unstructured, podName, 
 		}
 		w.mu.Unlock()
 	}
+}
+
+// nativeSidecarNames returns the names of initContainers declared with
+// restartPolicy: Always — Kubernetes native sidecars rather than startup steps.
+func nativeSidecarNames(obj *unstructured.Unstructured) map[string]bool {
+	names := map[string]bool{}
+	specs, _, _ := unstructured.NestedSlice(obj.Object, "spec", "initContainers")
+	for _, c := range specs {
+		cm, ok := c.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name, _ := cm["name"].(string)
+		policy, _ := cm["restartPolicy"].(string)
+		if name != "" && policy == "Always" {
+			names[name] = true
+		}
+	}
+	return names
 }
 
 func (w *watcher) recordPodReady(obj *unstructured.Unstructured, podName, ns string, podCreated time.Time) {

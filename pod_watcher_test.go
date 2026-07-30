@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -11,8 +12,8 @@ import (
 func TestRecordInitContainersRecordsOnce(t *testing.T) {
 	w := newWatcher(nil)
 	pod := makePod("api-foo-abc", "my-app", "2026-06-23T03:00:00Z", []initContainer{
-		{name: "wait-for-sql-binding", finishedAt: "2026-06-23T03:00:20Z"},
-		{name: "wait-for-cache-binding", finishedAt: "2026-06-23T03:00:25Z"},
+		{name: "wait-for-sql-binding", startedAt: "2026-06-23T03:00:05Z", finishedAt: "2026-06-23T03:00:20Z"},
+		{name: "wait-for-cache-binding", startedAt: "2026-06-23T03:00:20Z", finishedAt: "2026-06-23T03:00:25Z"},
 	})
 
 	podCreated, _ := time.Parse(time.RFC3339, "2026-06-23T03:00:00Z")
@@ -52,7 +53,7 @@ func TestRecordInitContainersSkipsRestarted(t *testing.T) {
 	w := newWatcher(nil)
 
 	// After a node reboot the init container re-runs; the terminated state then
-	// describes the re-run, so finishedAt - podCreated would be the pod's age.
+	// describes the re-run, and the original startup wait is no longer visible.
 	pod := &unstructured.Unstructured{Object: map[string]interface{}{}}
 	_ = unstructured.SetNestedSlice(pod.Object, []interface{}{
 		map[string]interface{}{
@@ -72,6 +73,58 @@ func TestRecordInitContainersSkipsRestarted(t *testing.T) {
 
 	if len(w.initContainerRecorded) != 0 {
 		t.Error("expected no entries recorded for restarted init container")
+	}
+}
+
+// Init containers are sequential, so a figure measured from pod creation makes
+// every stage after a slow one look equally slow. Only the container's own run
+// tells you which stage was the gate.
+func TestRecordInitContainersMeasuresOwnDuration(t *testing.T) {
+	w := newWatcher(nil)
+	pod := makePod("api-bar-abc", "own-duration", "2026-06-23T03:00:00Z", []initContainer{
+		{name: "wait-for-object-storage-binding", startedAt: "2026-06-23T03:00:03Z", finishedAt: "2026-06-23T03:01:18Z"},
+		{name: "wait-for-sql-binding", startedAt: "2026-06-23T03:01:18Z", finishedAt: "2026-06-23T03:01:19Z"},
+	})
+
+	podCreated, _ := time.Parse(time.RFC3339, "2026-06-23T03:00:00Z")
+	w.recordInitContainers(pod, "api-bar-abc", "own-duration", podCreated)
+
+	gate := testutil.ToFloat64(podInitContainerDuration.WithLabelValues(
+		"wait-for-object-storage-binding", "own-duration", "api-bar-abc"))
+	if gate != 75 {
+		t.Errorf("object-storage: want 75s of own runtime, got %v", gate)
+	}
+
+	// 1s of its own, not the 79s it would inherit from the stage before it.
+	downstream := testutil.ToFloat64(podInitContainerDuration.WithLabelValues(
+		"wait-for-sql-binding", "own-duration", "api-bar-abc"))
+	if downstream != 1 {
+		t.Errorf("sql: want 1s of own runtime, got %v", downstream)
+	}
+}
+
+func TestRecordInitContainersSkipsNativeSidecar(t *testing.T) {
+	w := newWatcher(nil)
+
+	// istio-proxy sits in initContainers with restartPolicy: Always and runs for
+	// the pod's whole life, so its terminated state only appears at shutdown.
+	pod := makePod("api-foo-abc", "sidecar", "2026-06-23T03:00:00Z", []initContainer{
+		{name: "istio-proxy", startedAt: "2026-06-23T03:00:01Z", finishedAt: "2026-07-01T03:00:01Z"},
+		{name: "wait-for-sql-binding", startedAt: "2026-06-23T03:00:01Z", finishedAt: "2026-06-23T03:00:03Z"},
+	})
+	_ = unstructured.SetNestedSlice(pod.Object, []interface{}{
+		map[string]interface{}{"name": "istio-proxy", "restartPolicy": "Always"},
+		map[string]interface{}{"name": "wait-for-sql-binding"},
+	}, "spec", "initContainers")
+
+	podCreated, _ := time.Parse(time.RFC3339, "2026-06-23T03:00:00Z")
+	w.recordInitContainers(pod, "api-foo-abc", "sidecar", podCreated)
+
+	if w.initContainerRecorded["sidecar/api-foo-abc/istio-proxy"] {
+		t.Error("expected native sidecar istio-proxy to be skipped")
+	}
+	if !w.initContainerRecorded["sidecar/api-foo-abc/wait-for-sql-binding"] {
+		t.Error("expected the real init container to still be recorded")
 	}
 }
 
@@ -114,6 +167,7 @@ func TestRecordPodReadySkipsNotReady(t *testing.T) {
 
 type initContainer struct {
 	name       string
+	startedAt  string
 	finishedAt string
 }
 
@@ -130,6 +184,7 @@ func makePod(name, namespace, createdAt string, initContainers []initContainer) 
 			"name": ic.name,
 			"state": map[string]interface{}{
 				"terminated": map[string]interface{}{
+					"startedAt":  ic.startedAt,
 					"finishedAt": ic.finishedAt,
 					"exitCode":   int64(0),
 				},
