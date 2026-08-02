@@ -180,7 +180,9 @@ func TestHandleXRPreexistingRecordedButSkipsHistogram(t *testing.T) {
 	}
 }
 
-func TestHandleXRClearsOnNotReady(t *testing.T) {
+// A Ready flip long after provisioning must not re-record: elapsed is measured
+// from creation, so the second observation would be the XR's whole age.
+func TestHandleXRKeepsRecordedAcrossNotReadyFlip(t *testing.T) {
 	w := newWatcher(nil)
 	k := xrKind{kind: "Sql"}
 
@@ -196,9 +198,13 @@ func TestHandleXRClearsOnNotReady(t *testing.T) {
 
 	w.handleXR(notReady, k)
 
+	// Hours later the provider flips it back to Ready.
+	reReady := makeXR("my-db", "my-app", "2026-06-23T02:00:00Z", "2026-06-23T14:00:00Z")
+	w.handleXR(reReady, k)
+
 	key := "Sql/my-app/my-db"
-	if w.xrReadyRecorded[key] {
-		t.Error("expected key to be cleared after not-ready")
+	if !w.xrReadyRecorded[key] {
+		t.Error("expected key to stay recorded across a not-ready flip")
 	}
 }
 
