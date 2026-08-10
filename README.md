@@ -91,7 +91,7 @@ The `deploy` job authenticates to `cujarrett/homelab` with `HOMELAB_PAT`, a repo
 print -n "Paste new token: "
 read -rs NEW_TOKEN
 echo
-echo -n "$NEW_TOKEN" | gh secret set HOMELAB_PAT --repo cujarrett/platform-exporter --body -
+gh secret set HOMELAB_PAT --repo cujarrett/platform-exporter --body "$NEW_TOKEN"
 unset NEW_TOKEN
 
 # 3. Revoke the old token, then confirm the next merge to main still deploys.
