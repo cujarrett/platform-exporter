@@ -11,7 +11,7 @@ import (
 )
 
 // watchPods watches pods labelled app=api or app=spa and records
-// init container durations and pod ready time. No secret access required —
+// init container durations and pod ready time. No secret access required -
 // all timing data is on the pod spec/status itself.
 func (w *watcher) watchPods(ctx context.Context) {
 	retryWatch(ctx, "pods", func() error { return w.doWatchPods(ctx) })
@@ -83,7 +83,7 @@ func (w *watcher) recordInitContainers(obj *unstructured.Unstructured, podName, 
 
 		// Init containers re-run after a node or container runtime restart. The
 		// terminated state then describes the re-run, not the original startup
-		// wait, and the first-run timing is gone from the status — skip.
+		// wait, and the first-run timing is gone from the status - skip.
 		restartCount, _, _ := unstructured.NestedInt64(sm, "restartCount")
 		if restartCount > 0 {
 			continue
@@ -127,7 +127,7 @@ func (w *watcher) recordInitContainers(obj *unstructured.Unstructured, podName, 
 }
 
 // nativeSidecarNames returns the names of initContainers declared with
-// restartPolicy: Always — Kubernetes native sidecars rather than startup steps.
+// restartPolicy: Always - Kubernetes native sidecars rather than startup steps.
 func nativeSidecarNames(obj *unstructured.Unstructured) map[string]bool {
 	names := map[string]bool{}
 	specs, _, _ := unstructured.NestedSlice(obj.Object, "spec", "initContainers")

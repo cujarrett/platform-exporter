@@ -156,7 +156,7 @@ func (w *watcher) doWatchXR(ctx context.Context, gvr schema.GroupVersionResource
 
 // reconcileXR refreshes gauges for every currently-live XR of kind k and
 // deletes gauges for any XR this watcher previously tracked (of the same
-// kind) that is no longer in the list — the case a missed watch.Deleted
+// kind) that is no longer in the list - the case a missed watch.Deleted
 // event would otherwise leak.
 func (w *watcher) reconcileXR(items []unstructured.Unstructured, k xrKind) {
 	seen := make(map[string]struct{}, len(items))
@@ -224,7 +224,7 @@ func (w *watcher) handleXR(obj *unstructured.Unstructured, k xrKind) {
 	w.xrLive[key] = xrIdentity{kind: k.kind, name: name, ns: ns, backend: backend}
 
 	// Recorded once per XR lifetime. A later Ready flip is a recovery, not
-	// provisioning, and elapsed is measured from creation — re-recording one would
+	// provisioning, and elapsed is measured from creation - re-recording one would
 	// bill the XR's whole age as time-to-ready. xrReady tracks the flapping instead.
 	if ready && !readyAt.IsZero() && !w.xrReadyRecorded[key] {
 		w.xrReadyRecorded[key] = true
@@ -411,7 +411,7 @@ func (w *watcher) handleManaged(obj *unstructured.Unstructured, k managedKind) {
 
 	w.managedLive[key] = managedIdentity{kind: k.kind, name: name, ns: ns}
 
-	// Recorded once per resource lifetime, same reason as handleXR — the AWS
+	// Recorded once per resource lifetime, same reason as handleXR - the AWS
 	// provider re-flips Ready on async operations long after provisioning.
 	if ready && !readyAt.IsZero() && !w.managedReadyRecorded[key] {
 		w.managedReadyRecorded[key] = true

@@ -1,6 +1,6 @@
 # platform-exporter
 
-Prometheus exporter that watches Crossplane platform XRs, managed resources, and pods, and emits readiness and timing metrics — how long each kind takes to go from created to ready, which Apis are bound to which platform resources, and how long pod init containers take.
+Prometheus exporter that watches Crossplane platform XRs, managed resources, and pods, and emits readiness and timing metrics - how long each kind takes to go from created to ready, which Apis are bound to which platform resources, and how long pod init containers take.
 
 ## Metrics
 
@@ -37,7 +37,7 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 | `RolesAnywhereProfile` | `rolesanywhere.aws.upbound.io/v1beta1` |
 | `S3Bucket` | `s3.aws.upbound.io/v1beta2` |
 
-**Pods**: pods labelled `app in (api, spa)` — init container durations and pod ready time
+**Pods**: pods labelled `app in (api, spa)` - init container durations and pod ready time
 
 ### Api binding types
 
@@ -65,7 +65,7 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `PORT` | no | `8080` | Port to serve `/metrics` and `/healthz` on |
-| `KUBECONFIG` | no | — | Path to kubeconfig for local dev. Uses in-cluster config when unset. |
+| `KUBECONFIG` | no | - | Path to kubeconfig for local dev. Uses in-cluster config when unset. |
 
 ## Endpoints
 
@@ -76,16 +76,16 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 
 ## Deployment
 
-Runs on the homelab cluster as a cluster-scoped service (not an Api — needs a ClusterRole to watch XRs across all namespaces). Manifests live in [`homelab/cluster/platform-exporter/`](https://github.com/cujarrett/homelab/tree/main/cluster/platform-exporter). Image: `ghcr.io/cujarrett/platform-exporter`. ARM64.
+Runs on the homelab cluster as a cluster-scoped service (not an Api - needs a ClusterRole to watch XRs across all namespaces). Manifests live in [`homelab/cluster/platform-exporter/`](https://github.com/cujarrett/homelab/tree/main/cluster/platform-exporter). Image: `ghcr.io/cujarrett/platform-exporter`. ARM64.
 
 ### Rotating `HOMELAB_PAT`
 
-The `deploy` job authenticates to `cujarrett/homelab` with `HOMELAB_PAT`, a repo-level Actions secret holding a fine-grained PAT. This repo's token is its own — other repos also define a secret by that name, but theirs is scoped to `cujarrett/homelab-workspaces` and rotating one does not affect the other.
+The `deploy` job authenticates to `cujarrett/homelab` with `HOMELAB_PAT`, a repo-level Actions secret holding a fine-grained PAT. This repo's token is its own - other repos also define a secret by that name, but theirs is scoped to `cujarrett/homelab-workspaces` and rotating one does not affect the other.
 
 ```bash
 # 1. Mint a replacement at https://github.com/settings/personal-access-tokens
-#    Repository access — cujarrett/homelab only
-#    Permissions — Contents: Read and write
+#    Repository access - cujarrett/homelab only
+#    Permissions - Contents: Read and write
 
 # 2. Replace the secret
 print -n "Paste new token: "

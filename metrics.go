@@ -8,7 +8,7 @@ var (
 		Namespace: "platform",
 		Name:      "xr_time_to_ready_seconds",
 		Help:      "Seconds from XR creation to Ready=True, by kind and backend.",
-		// Sub-5s edges matter — most XRs go Ready in well under a second, and
+		// Sub-5s edges matter - most XRs go Ready in well under a second, and
 		// without them every fast kind reads as the 1-5s bucket midpoint.
 		Buckets: []float64{0.25, 0.5, 1, 2.5, 5, 15, 30, 60, 120, 300, 600, 900},
 	}, []string{"kind", "backend"})
