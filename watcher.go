@@ -48,7 +48,6 @@ var watchedManaged = []managedKind{
 	{"jetstream.nats.io", "v1beta2", "streams", "NATSStream"},
 	{"jetstream.nats.io", "v1beta2", "consumers", "NATSConsumer"},
 	{"rds.aws.upbound.io", "v1beta3", "instances", "RDSInstance"},
-	{"rolesanywhere.aws.upbound.io", "v1beta1", "profiles", "RolesAnywhereProfile"},
 	{"s3.aws.upbound.io", "v1beta2", "buckets", "S3Bucket"},
 }
 
@@ -304,7 +303,7 @@ func (w *watcher) clearBindings(consumerName, consumerKind string) {
 	delete(w.xrBindings, consumerName)
 }
 
-// ── Managed resource watching (IAM Role, RolesAnywhere Profile) ──────────────
+// ── Managed resource watching (IAM Role, S3 Bucket, etc.) ────────────────────
 
 func (w *watcher) watchManaged(ctx context.Context, k managedKind) {
 	gvr := schema.GroupVersionResource{Group: k.group, Version: k.version, Resource: k.resource}

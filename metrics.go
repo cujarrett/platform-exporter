@@ -25,7 +25,7 @@ var (
 		Help:      "Seconds from XR creation to Ready=True, per instance.",
 	}, []string{"kind", "name", "namespace", "backend"})
 
-	// Managed resource metrics (IAM Role, RolesAnywhere Profile)
+	// Managed resource metrics (IAM Role, S3 Bucket, etc.)
 	managedTimeToReady = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "platform",
 		Name:      "managed_time_to_ready_seconds",
