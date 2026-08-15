@@ -49,6 +49,14 @@ var watchedManaged = []managedKind{
 	{"jetstream.nats.io", "v1beta2", "consumers", "NATSConsumer"},
 	{"rds.aws.upbound.io", "v1beta3", "instances", "RDSInstance"},
 	{"s3.aws.upbound.io", "v1beta2", "buckets", "S3Bucket"},
+	// Entra. The grant is the one worth watching - it depends on a role replicating
+	// from an app registration to its service principal, so it is red for its first
+	// half-minute by design rather than by fault.
+	{"applications.azuread.upbound.io", "v1beta2", "applications", "EntraApplication"},
+	{"serviceprincipals.azuread.upbound.io", "v1beta2", "principals", "EntraServicePrincipal"},
+	{"applications.azuread.upbound.io", "v1beta1", "federatedidentitycredentials", "EntraFederatedCredential"},
+	{"applications.azuread.upbound.io", "v1beta1", "approles", "EntraAppRole"},
+	{"app.azuread.upbound.io", "v1beta1", "roleassignments", "EntraRoleAssignment"},
 }
 
 // xrIdentity is the label set behind a live XR's gauges, kept around so a
