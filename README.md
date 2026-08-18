@@ -80,22 +80,7 @@ Runs on the homelab cluster as a cluster-scoped service (not an Api - needs a Cl
 
 ### Rotating `HOMELAB_PAT`
 
-The `deploy` job authenticates to `cujarrett/homelab` with `HOMELAB_PAT`, a repo-level Actions secret holding a fine-grained PAT. This repo's token is its own - other repos also define a secret by that name, but theirs is scoped to `cujarrett/homelab-workspaces` and rotating one does not affect the other.
-
-```bash
-# 1. Mint a replacement at https://github.com/settings/personal-access-tokens
-#    Repository access - cujarrett/homelab only
-#    Permissions - Contents: Read and write
-
-# 2. Replace the secret
-print -n "Paste new token: "
-read -rs NEW_TOKEN
-echo
-gh secret set HOMELAB_PAT --repo cujarrett/platform-exporter --body "$NEW_TOKEN"
-unset NEW_TOKEN
-
-# 3. Revoke the old token, then confirm the next merge to main still deploys.
-#    CI has no workflow_dispatch trigger, so watch the run the next push produces.
-gh run watch --repo cujarrett/platform-exporter \
-  "$(gh run list --repo cujarrett/platform-exporter --branch main --limit 1 --json databaseId --jq '.[0].databaseId')"
-```
+Pushes straight to `cujarrett/homelab`, not `homelab-workspaces` like most consumers - shared with
+`secret-mirror-controller` and rotated centrally. See
+[GitHub Tokens](https://github.com/cujarrett/homelab/blob/main/docs/github-tokens.md) in the
+homelab repo.
