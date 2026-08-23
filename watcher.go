@@ -40,23 +40,23 @@ var watchedXRs = []xrKind{
 }
 
 var watchedManaged = []managedKind{
-	{"dynamodb.aws.upbound.io", "v1beta1", "tables", "DynamoDBTable"},
-	{"elasticache.aws.upbound.io", "v1beta2", "replicationgroups", "ElastiCacheReplicationGroup"},
-	{"elasticache.aws.upbound.io", "v1beta1", "users", "ElastiCacheUser"},
-	{"elasticache.aws.upbound.io", "v1beta1", "usergroups", "ElastiCacheUserGroup"},
-	{"iam.aws.upbound.io", "v1beta1", "roles", "IAMRole"},
+	{"dynamodb.aws.m.upbound.io", "v1beta1", "tables", "DynamoDBTable"},
+	{"elasticache.aws.m.upbound.io", "v1beta1", "replicationgroups", "ElastiCacheReplicationGroup"},
+	{"elasticache.aws.m.upbound.io", "v1beta1", "users", "ElastiCacheUser"},
+	{"elasticache.aws.m.upbound.io", "v1beta1", "usergroups", "ElastiCacheUserGroup"},
+	{"iam.aws.m.upbound.io", "v1beta1", "roles", "IAMRole"},
 	{"jetstream.nats.io", "v1beta2", "streams", "NATSStream"},
 	{"jetstream.nats.io", "v1beta2", "consumers", "NATSConsumer"},
-	{"rds.aws.upbound.io", "v1beta3", "instances", "RDSInstance"},
-	{"s3.aws.upbound.io", "v1beta2", "buckets", "S3Bucket"},
+	{"rds.aws.m.upbound.io", "v1beta1", "instances", "RDSInstance"},
+	{"s3.aws.m.upbound.io", "v1beta1", "buckets", "S3Bucket"},
 	// Entra. The grant is the one worth watching - it depends on a role replicating
 	// from an app registration to its service principal, so it is red for its first
 	// half-minute by design rather than by fault.
-	{"applications.azuread.upbound.io", "v1beta2", "applications", "EntraApplication"},
-	{"serviceprincipals.azuread.upbound.io", "v1beta2", "principals", "EntraServicePrincipal"},
-	{"applications.azuread.upbound.io", "v1beta1", "federatedidentitycredentials", "EntraFederatedCredential"},
-	{"applications.azuread.upbound.io", "v1beta1", "approles", "EntraAppRole"},
-	{"app.azuread.upbound.io", "v1beta1", "roleassignments", "EntraRoleAssignment"},
+	{"applications.azuread.m.upbound.io", "v1beta1", "applications", "EntraApplication"},
+	{"serviceprincipals.azuread.m.upbound.io", "v1beta1", "principals", "EntraServicePrincipal"},
+	{"applications.azuread.m.upbound.io", "v1beta1", "federatedidentitycredentials", "EntraFederatedCredential"},
+	{"applications.azuread.m.upbound.io", "v1beta1", "approles", "EntraAppRole"},
+	{"app.azuread.m.upbound.io", "v1beta1", "roleassignments", "EntraRoleAssignment"},
 }
 
 // xrIdentity is the label set behind a live XR's gauges, kept around so a
