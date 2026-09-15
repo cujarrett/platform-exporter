@@ -78,7 +78,7 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 
 Runs on the homelab cluster as a cluster-scoped service (not an Api - needs a ClusterRole to watch XRs across all namespaces). Manifests live in [`homelab/cluster/platform-exporter/`](https://github.com/cujarrett/homelab/tree/main/cluster/platform-exporter). Image: `ghcr.io/cujarrett/platform-exporter`. ARM64.
 
-### Rotating `HOMELAB_PAT`
+### Rotating `HOMELAB_DEPLOY_PAT`
 
 Pushes straight to `cujarrett/homelab`, not `homelab-workspaces` like most consumers - shared with
 `secret-mirror-controller` and rotated centrally. See
