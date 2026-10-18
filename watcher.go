@@ -37,6 +37,10 @@ var watchedXRs = []xrKind{
 	{"platform.local.lab", "v1alpha1", "caches", "Cache"},
 	{"platform.local.lab", "v1alpha1", "topics", "Topic"},
 	{"platform.local.lab", "v1alpha1", "subscriptions", "Subscription"},
+	{"platform.local.lab", "v1alpha1", "managedsecrets", "ManagedSecret"},
+	{"platform.local.lab", "v1alpha1", "wordpresses", "Wordpress"},
+	{"platform.local.lab", "v1alpha1", "graphapis", "GraphApi"},
+	{"platform.local.lab", "v1alpha1", "federatedgraphs", "FederatedGraph"},
 }
 
 var watchedManaged = []managedKind{
@@ -458,16 +462,16 @@ func readyCondition(obj *unstructured.Unstructured) (bool, time.Time) {
 }
 
 // backendOf returns the infrastructure backend label for an XR. It reads
-// spec.parameters.backend when set; otherwise NoSql and ObjectStorage are
-// always provisioned on AWS (public-cloud) while all other kinds default to the
-// private cluster (private-cloud).
+// spec.parameters.backend when set; otherwise NoSql, ObjectStorage and
+// ManagedSecret are always provisioned on AWS (public-cloud) while all other
+// kinds default to the private cluster (private-cloud).
 func backendOf(obj *unstructured.Unstructured, kind string) string {
 	backend, _, _ := unstructured.NestedString(obj.Object, "spec", "parameters", "backend")
 	if backend != "" {
 		return backend
 	}
 	switch kind {
-	case "NoSql", "ObjectStorage":
+	case "NoSql", "ObjectStorage", "ManagedSecret":
 		return "public-cloud"
 	}
 	return "private-cloud"

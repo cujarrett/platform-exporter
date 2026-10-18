@@ -20,7 +20,7 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 
 ### Watched resources
 
-**XRs** (all `platform.local.lab/v1alpha1`): `Api`, `Spa`, `Sql`, `NoSql`, `ObjectStorage`, `Cache`, `Topic`, `Subscription`
+**XRs** (all `platform.local.lab/v1alpha1`): `Api`, `Spa`, `Sql`, `NoSql`, `ObjectStorage`, `Cache`, `Topic`, `Subscription`, `ManagedSecret`, `Wordpress`, `GraphApi`, `FederatedGraph`
 
 **Managed resources**:
 

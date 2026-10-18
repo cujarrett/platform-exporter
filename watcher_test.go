@@ -107,6 +107,11 @@ func TestBackendOf(t *testing.T) {
 			want: "public-cloud",
 		},
 		{
+			name: "ManagedSecret defaults to public-cloud",
+			kind: "ManagedSecret",
+			want: "public-cloud",
+		},
+		{
 			name: "Api defaults to private-cloud",
 			kind: "Api",
 			want: "private-cloud",
