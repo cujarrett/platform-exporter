@@ -63,9 +63,17 @@ jobs:
       contents: read
 
     steps:
+      - name: Mint app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: Iv23liNyzLKWP1khuH23
+          private-key: ${{ secrets.HOMELAB_APP_KEY }}
+          repositories: homelab
+
       - name: Update image tag in homelab
         env:
-          GH_TOKEN: ${{ secrets.HOMELAB_DEPLOY_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           FILE="cluster/platform-exporter/deployment.yaml"
           IMAGE="ghcr.io/cujarrett/platform-exporter"
