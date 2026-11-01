@@ -217,6 +217,7 @@ func TestExtractBindings(t *testing.T) {
 	obj := &unstructured.Unstructured{Object: map[string]interface{}{}}
 	_ = unstructured.SetNestedField(obj.Object, "my-db", "spec", "parameters", "sqlRef", "name")
 	_ = unstructured.SetNestedField(obj.Object, "my-topic", "spec", "parameters", "topicRef", "name")
+	_ = unstructured.SetNestedField(obj.Object, "my-workflows", "spec", "parameters", "workflowRef", "name")
 	_ = unstructured.SetNestedSlice(obj.Object, []interface{}{
 		map[string]interface{}{"name": "my-bucket"},
 		map[string]interface{}{"name": "other-bucket"},
@@ -227,6 +228,7 @@ func TestExtractBindings(t *testing.T) {
 	want := map[string]struct{}{
 		"sql/my-db":                   {},
 		"topic/my-topic":              {},
+		"workflow/my-workflows":       {},
 		"object-storage/my-bucket":    {},
 		"object-storage/other-bucket": {},
 	}

@@ -37,7 +37,7 @@ Before telling the user to commit, always run `/security-review`. It reviews the
 ## Metrics
 - `platform_xr_time_to_ready_seconds{kind, backend}` - histogram, creation → Ready=True
 - `platform_xr_ready{kind, name, namespace, backend}` - gauge, 1=ready 0=not
-- `platform_xr_binding{consumer_kind, consumer_name, binding_type, provider_name}` - gauge, 1=active binding; tracks sqlRef, nosqlRef, topicRef, subscriptionRef, objectStorageRefs on Api; cleared on Api deletion
+- `platform_xr_binding{consumer_kind, consumer_name, binding_type, provider_name}` - gauge, 1=active binding; tracks sqlRef, nosqlRef, topicRef, subscriptionRef, workflowRef, objectStorageRefs on Api; cleared on Api deletion
 - `platform_managed_time_to_ready_seconds{kind}` - histogram, creation → Ready=True
 - `platform_managed_ready{kind, name, namespace}` - gauge, 1=ready 0=not
 - `platform_pod_init_container_seconds{init_container, namespace}` - histogram, pod creation → init container finished
