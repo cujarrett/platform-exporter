@@ -41,7 +41,7 @@ var watchedXRs = []xrKind{
 	{"platform.local.lab", "v1alpha1", "wordpresses", "Wordpress"},
 	{"platform.local.lab", "v1alpha1", "graphapis", "GraphApi"},
 	{"platform.local.lab", "v1alpha1", "federatedgraphs", "FederatedGraph"},
-	{"platform.local.lab", "v1alpha1", "workflows", "Workflow"},
+	{"platform.local.lab", "v1alpha1", "workflowspaces", "WorkflowSpace"},
 }
 
 var watchedManaged = []managedKind{
@@ -258,7 +258,7 @@ func (w *watcher) handleXR(obj *unstructured.Unstructured, k xrKind) {
 
 // extractBindings returns the set of "binding_type/provider_name" keys from an
 // Api's spec.parameters refs (sqlRef, nosqlRef, topicRef, subscriptionRef,
-// workflowRef, objectStorageRefs). The returned keys are used by syncBindings and clearBindings
+// workflowSpaceRef, objectStorageRefs). The returned keys are used by syncBindings and clearBindings
 // to delete stale Prometheus label sets.
 func extractBindings(obj *unstructured.Unstructured) map[string]struct{} {
 	result := make(map[string]struct{})
@@ -274,7 +274,7 @@ func extractBindings(obj *unstructured.Unstructured) map[string]struct{} {
 	if n, _, _ := unstructured.NestedString(obj.Object, "spec", "parameters", "subscriptionRef", "name"); n != "" {
 		result["subscription/"+n] = struct{}{}
 	}
-	if n, _, _ := unstructured.NestedString(obj.Object, "spec", "parameters", "workflowRef", "name"); n != "" {
+	if n, _, _ := unstructured.NestedString(obj.Object, "spec", "parameters", "workflowSpaceRef", "name"); n != "" {
 		result["workflow/"+n] = struct{}{}
 	}
 	refs, _, _ := unstructured.NestedSlice(obj.Object, "spec", "parameters", "objectStorageRefs")

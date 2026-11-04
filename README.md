@@ -20,7 +20,7 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 
 ### Watched resources
 
-**XRs** (all `platform.local.lab/v1alpha1`): `Api`, `Spa`, `Sql`, `NoSql`, `ObjectStorage`, `Cache`, `Topic`, `Subscription`, `ManagedSecret`, `Wordpress`, `GraphApi`, `FederatedGraph`, `Workflow`
+**XRs** (all `platform.local.lab/v1alpha1`): `Api`, `Spa`, `Sql`, `NoSql`, `ObjectStorage`, `Cache`, `Topic`, `Subscription`, `ManagedSecret`, `Wordpress`, `GraphApi`, `FederatedGraph`, `WorkflowSpace`
 
 **Managed resources**:
 
@@ -50,7 +50,7 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 | `nosql` | `spec.parameters.nosqlRef.name` |
 | `topic` | `spec.parameters.topicRef.name` |
 | `subscription` | `spec.parameters.subscriptionRef.name` |
-| `workflow` | `spec.parameters.workflowRef.name` |
+| `workflow` | `spec.parameters.workflowSpaceRef.name` |
 | `object-storage` | `spec.parameters.objectStorageRefs[].name` |
 
 ## Commands
