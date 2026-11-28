@@ -443,27 +443,33 @@ func (w *watcher) handleManaged(obj *unstructured.Unstructured, k managedKind) {
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
-// readyCondition returns whether obj has a Ready=True condition and when it last
-// transitioned. If lastTransitionTime is absent or unparseable the second return
-// is the zero Time; callers guard with !readyAt.IsZero() before using the duration.
+// readyCondition reports whether obj is ready, and when it became Ready.
+// Synced=False: not ready. Crossplane leaves Ready=True when an apply fails.
+// lastTransitionTime missing or unparseable: the zero Time.
 func readyCondition(obj *unstructured.Unstructured) (bool, time.Time) {
 	conditions, _, _ := unstructured.NestedSlice(obj.Object, "status", "conditions")
+	ready := false
+	var readyAt time.Time
 	for _, c := range conditions {
 		cm, ok := c.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		if cm["type"] != "Ready" {
-			continue
+		switch cm["type"] {
+		case "Synced":
+			if cm["status"] == "False" {
+				return false, time.Time{}
+			}
+		case "Ready":
+			if cm["status"] != "True" {
+				return false, time.Time{}
+			}
+			t, _ := cm["lastTransitionTime"].(string)
+			readyAt, _ = time.Parse(time.RFC3339, t)
+			ready = true
 		}
-		if cm["status"] != "True" {
-			return false, time.Time{}
-		}
-		t, _ := cm["lastTransitionTime"].(string)
-		parsed, _ := time.Parse(time.RFC3339, t)
-		return true, parsed
 	}
-	return false, time.Time{}
+	return ready, readyAt
 }
 
 // backendOf returns the infrastructure backend label for an XR. It reads

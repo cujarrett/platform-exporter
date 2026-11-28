@@ -8,11 +8,11 @@ Prometheus exporter that watches Crossplane platform XRs, managed resources, and
 |---|---|---|---|
 | `platform_xr_time_to_ready_seconds` | Histogram | `kind`, `backend` | Seconds from XR creation to `Ready=True`, aggregated by kind |
 | `platform_xr_time_to_ready_seconds_instance` | Gauge | `kind`, `name`, `namespace`, `backend` | Seconds from XR creation to `Ready=True`, per instance |
-| `platform_xr_ready` | Gauge | `kind`, `name`, `namespace`, `backend` | `1` if ready, `0` if not |
+| `platform_xr_ready` | Gauge | `kind`, `name`, `namespace`, `backend` | `1` if Ready and not `Synced=False`, `0` if not |
 | `platform_xr_binding` | Gauge | `consumer_kind`, `consumer_name`, `binding_type`, `provider_name` | `1` when an Api has an active binding to a named platform resource |
 | `platform_managed_time_to_ready_seconds` | Histogram | `kind` | Seconds from managed resource creation to `Ready=True`, aggregated by kind |
 | `platform_managed_time_to_ready_seconds_instance` | Gauge | `kind`, `name`, `namespace` | Seconds from managed resource creation to `Ready=True`, per instance |
-| `platform_managed_ready` | Gauge | `kind`, `name`, `namespace` | `1` if the managed resource is ready, `0` if not |
+| `platform_managed_ready` | Gauge | `kind`, `name`, `namespace` | `1` if the managed resource is Ready and not `Synced=False`, `0` if not |
 | `platform_pod_init_container_seconds` | Histogram | `init_container`, `namespace` | Seconds from pod creation to each init container completing, aggregated by namespace |
 | `platform_pod_init_container_seconds_instance` | Gauge | `init_container`, `namespace`, `pod` | Seconds from pod creation to each init container completing, per pod |
 | `platform_pod_time_to_ready_seconds` | Histogram | `namespace` | Seconds from pod creation to `Ready=True`, aggregated by namespace |

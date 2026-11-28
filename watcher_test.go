@@ -48,7 +48,7 @@ func TestReadyCondition(t *testing.T) {
 			wantNonZero: false,
 		},
 		{
-			name: "other condition types ignored",
+			name: "synced true beside ready true",
 			conditions: []interface{}{
 				map[string]interface{}{"type": "Synced", "status": "True"},
 				map[string]interface{}{
@@ -59,6 +59,19 @@ func TestReadyCondition(t *testing.T) {
 			},
 			wantReady:   true,
 			wantNonZero: true,
+		},
+		{
+			name: "ready true but synced false",
+			conditions: []interface{}{
+				map[string]interface{}{
+					"type":               "Ready",
+					"status":             "True",
+					"lastTransitionTime": "2026-06-23T03:00:00Z",
+				},
+				map[string]interface{}{"type": "Synced", "status": "False"},
+			},
+			wantReady:   false,
+			wantNonZero: false,
 		},
 	}
 
